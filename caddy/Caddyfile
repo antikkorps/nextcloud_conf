@@ -62,24 +62,14 @@
 	}
 
 	# ===========================================
-	# STALWART - mail.* ou dav.*
+	# BAIKAL - dav.* (CalDAV/CardDAV)
 	# ===========================================
-	@stalwart header_regexp host Host ^(mail|dav)\.
-	handle @stalwart {
-		reverse_proxy stalwart:8080 {
+	@baikal header_regexp host Host ^dav\.
+	handle @baikal {
+		reverse_proxy baikal:80 {
 			header_up X-Real-IP {header.CF-Connecting-IP}
 			header_up X-Forwarded-For {header.CF-Connecting-IP}
 		}
-	}
-
-	# ===========================================
-	# Well-known pour CalDAV/CardDAV (decouverte auto)
-	# ===========================================
-	handle /.well-known/caldav {
-		redir /dav permanent
-	}
-	handle /.well-known/carddav {
-		redir /dav permanent
 	}
 
 	# ===========================================

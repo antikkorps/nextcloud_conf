@@ -32,7 +32,7 @@ services:
     depends_on:
       - immich-server
       - seafile
-      - stalwart
+      - baikal
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:80/health"]
       interval: 30s
@@ -79,9 +79,6 @@ services:
       - immich_model_cache:/cache
     networks:
       - backend
-    environment:
-      - IMMICH_HOST=immich-server
-      - IMMICH_PORT=2283
     healthcheck:
       test: ["CMD-SHELL", "python3 -c 'import urllib.request; urllib.request.urlopen(\"http://localhost:3003/ping\")' || exit 1"]
       interval: 30s
@@ -184,26 +181,19 @@ services:
       - backend
 
   # ===========================================
-  # STALWART - CalDAV/CardDAV (+ Mail optionnel)
+  # BAIKAL - CalDAV/CardDAV
   # ===========================================
-  stalwart:
-    image: stalwartlabs/mail-server:latest
-    container_name: stalwart
+  baikal:
+    image: ckulka/baikal:nginx
+    container_name: baikal
     restart: unless-stopped
     volumes:
-      - stalwart_data:/opt/stalwart-mail
+      - baikal_config:/var/www/baikal/config
+      - baikal_data:/var/www/baikal/Specific
     networks:
       - frontend
-      - backend
     environment:
       - TZ=${TZ}
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/healthz || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-
 # ===========================================
 # Reseaux Docker isoles
 # ===========================================
@@ -232,9 +222,11 @@ volumes:
     name: seafile_data
   seafile_mysql_data:
     name: seafile_mysql
-  # Stalwart
-  stalwart_data:
-    name: stalwart_data
+  # Baikal
+  baikal_config:
+    name: baikal_config
+  baikal_data:
+    name: baikal_data
   # Caddy
   caddy_data:
     name: family_caddy_data
