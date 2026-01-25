@@ -117,6 +117,29 @@
 	}
 
 	# ===========================================
+	# JELLYFIN - media.* (Films & Series)
+	# ===========================================
+	@jellyfin header_regexp host Host ^media\.
+	handle @jellyfin {
+		reverse_proxy jellyfin:8096 {
+			flush_interval -1
+			header_up X-Real-IP {header.CF-Connecting-IP}
+			header_up X-Forwarded-For {header.CF-Connecting-IP}
+		}
+	}
+
+	# ===========================================
+	# AUDIOBOOKSHELF - books.* (Audiobooks)
+	# ===========================================
+	@audiobookshelf header_regexp host Host ^books\.
+	handle @audiobookshelf {
+		reverse_proxy audiobookshelf:80 {
+			header_up X-Real-IP {header.CF-Connecting-IP}
+			header_up X-Forwarded-For {header.CF-Connecting-IP}
+		}
+	}
+
+	# ===========================================
 	# Health check
 	# ===========================================
 	handle /health {

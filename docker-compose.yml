@@ -37,6 +37,8 @@ services:
       - paperless
       - homepage
       - stirling-pdf
+      - jellyfin
+      - audiobookshelf
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:80/health"]
       interval: 30s
@@ -314,6 +316,52 @@ services:
       timeout: 10s
       retries: 3
 
+  # ===========================================
+  # JELLYFIN - Serveur de medias
+  # ===========================================
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    volumes:
+      - jellyfin_config:/config
+      - jellyfin_cache:/cache
+      - ${MEDIA_PATH}/films:/media/films:ro
+      - ${MEDIA_PATH}/series:/media/series:ro
+    networks:
+      - frontend
+    environment:
+      - TZ=${TZ}
+      - JELLYFIN_PublishedServerUrl=https://${JELLYFIN_DOMAIN}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8096/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ===========================================
+  # AUDIOBOOKSHELF - Audiobooks & Podcasts
+  # ===========================================
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:latest
+    container_name: audiobookshelf
+    restart: unless-stopped
+    volumes:
+      - audiobookshelf_config:/config
+      - audiobookshelf_metadata:/metadata
+      - ${MEDIA_PATH}/audiobooks:/audiobooks
+      - ${MEDIA_PATH}/livres:/books
+    networks:
+      - frontend
+    environment:
+      - TZ=${TZ}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 # ===========================================
 # Reseaux Docker isoles
 # ===========================================
@@ -366,6 +414,16 @@ volumes:
     name: stirling_data
   stirling_config:
     name: stirling_config
+  # Jellyfin
+  jellyfin_config:
+    name: jellyfin_config
+  jellyfin_cache:
+    name: jellyfin_cache
+  # Audiobookshelf
+  audiobookshelf_config:
+    name: audiobookshelf_config
+  audiobookshelf_metadata:
+    name: audiobookshelf_metadata
   # Caddy
   caddy_data:
     name: family_caddy_data

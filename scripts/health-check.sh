@@ -98,6 +98,12 @@ main() {
     # Verifier Stirling PDF
     local stirling=$(check_service "stirling-pdf")
 
+    # Verifier Jellyfin
+    local jellyfin=$(check_service "jellyfin")
+
+    # Verifier Audiobookshelf
+    local audiobookshelf=$(check_service "audiobookshelf")
+
     # Verifier l'infrastructure
     local caddy=$(check_service "family-caddy")
     local cloudflared=$(check_service "family-cloudflared")
@@ -119,6 +125,8 @@ main() {
        [[ "$paperless" != "ok" ]] || \
        [[ "$homepage" != "ok" ]] || \
        [[ "$stirling" != "ok" ]] || \
+       [[ "$jellyfin" != "ok" ]] || \
+       [[ "$audiobookshelf" != "ok" ]] || \
        [[ "$caddy" != "ok" ]]; then
         overall="degraded"
     fi
@@ -152,6 +160,12 @@ main() {
     fi
     if [[ "$stirling" != "ok" ]]; then
         alert_list+=("\"Stirling PDF is ${stirling}\"")
+    fi
+    if [[ "$jellyfin" != "ok" ]]; then
+        alert_list+=("\"Jellyfin is ${jellyfin}\"")
+    fi
+    if [[ "$audiobookshelf" != "ok" ]]; then
+        alert_list+=("\"Audiobookshelf is ${audiobookshelf}\"")
     fi
     if [[ "$caddy" != "ok" ]]; then
         alert_list+=("\"Caddy is ${caddy}\"")
@@ -199,6 +213,8 @@ main() {
     },
     "homepage": "${homepage}",
     "stirling": "${stirling}",
+    "jellyfin": "${jellyfin}",
+    "audiobookshelf": "${audiobookshelf}",
     "infrastructure": {
       "caddy": "${caddy}",
       "cloudflared": "${cloudflared}"

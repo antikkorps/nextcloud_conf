@@ -19,6 +19,20 @@
         server: my-docker
         container: paperless
 
+- Media:
+    - Films & Series:
+        icon: jellyfin.png
+        href: https://media.fvienot.link
+        description: Jellyfin
+        server: my-docker
+        container: jellyfin
+    - Audiobooks:
+        icon: audiobookshelf.png
+        href: https://books.fvienot.link
+        description: Audiobookshelf
+        server: my-docker
+        container: audiobookshelf
+
 - Outils:
     - Mots de passe:
         icon: vaultwarden.png
