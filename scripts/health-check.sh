@@ -82,8 +82,27 @@ main() {
     local seafile_mariadb=$(check_service "seafile-mariadb")
     local seafile_memcached=$(check_service "seafile-memcached")
 
-    # Verifier Stalwart
-    local stalwart=$(check_service "stalwart")
+    # Verifier Baikal (CalDAV/CardDAV)
+    local baikal=$(check_service "baikal")
+
+    # Verifier Vaultwarden
+    local vaultwarden=$(check_service "vaultwarden")
+
+    # Verifier Paperless
+    local paperless=$(check_service "paperless")
+    local paperless_redis=$(check_service "paperless-redis")
+
+    # Verifier Homepage
+    local homepage=$(check_service "homepage")
+
+    # Verifier Stirling PDF
+    local stirling=$(check_service "stirling-pdf")
+
+    # Verifier Jellyfin
+    local jellyfin=$(check_service "jellyfin")
+
+    # Verifier Audiobookshelf
+    local audiobookshelf=$(check_service "audiobookshelf")
 
     # Verifier l'infrastructure
     local caddy=$(check_service "family-caddy")
@@ -101,7 +120,13 @@ main() {
     local overall="ok"
     if [[ "$immich_server" != "ok" ]] || \
        [[ "$seafile" != "ok" ]] || \
-       [[ "$stalwart" != "ok" ]] || \
+       [[ "$baikal" != "ok" ]] || \
+       [[ "$vaultwarden" != "ok" ]] || \
+       [[ "$paperless" != "ok" ]] || \
+       [[ "$homepage" != "ok" ]] || \
+       [[ "$stirling" != "ok" ]] || \
+       [[ "$jellyfin" != "ok" ]] || \
+       [[ "$audiobookshelf" != "ok" ]] || \
        [[ "$caddy" != "ok" ]]; then
         overall="degraded"
     fi
@@ -121,8 +146,26 @@ main() {
     if [[ "$seafile_mariadb" != "ok" ]]; then
         alert_list+=("\"Seafile MariaDB is ${seafile_mariadb}\"")
     fi
-    if [[ "$stalwart" != "ok" ]]; then
-        alert_list+=("\"Stalwart is ${stalwart}\"")
+    if [[ "$baikal" != "ok" ]]; then
+        alert_list+=("\"Baikal is ${baikal}\"")
+    fi
+    if [[ "$vaultwarden" != "ok" ]]; then
+        alert_list+=("\"Vaultwarden is ${vaultwarden}\"")
+    fi
+    if [[ "$paperless" != "ok" ]]; then
+        alert_list+=("\"Paperless is ${paperless}\"")
+    fi
+    if [[ "$homepage" != "ok" ]]; then
+        alert_list+=("\"Homepage is ${homepage}\"")
+    fi
+    if [[ "$stirling" != "ok" ]]; then
+        alert_list+=("\"Stirling PDF is ${stirling}\"")
+    fi
+    if [[ "$jellyfin" != "ok" ]]; then
+        alert_list+=("\"Jellyfin is ${jellyfin}\"")
+    fi
+    if [[ "$audiobookshelf" != "ok" ]]; then
+        alert_list+=("\"Audiobookshelf is ${audiobookshelf}\"")
     fi
     if [[ "$caddy" != "ok" ]]; then
         alert_list+=("\"Caddy is ${caddy}\"")
@@ -162,7 +205,16 @@ main() {
       "mariadb": "${seafile_mariadb}",
       "memcached": "${seafile_memcached}"
     },
-    "stalwart": "${stalwart}",
+    "baikal": "${baikal}",
+    "vaultwarden": "${vaultwarden}",
+    "paperless": {
+      "app": "${paperless}",
+      "redis": "${paperless_redis}"
+    },
+    "homepage": "${homepage}",
+    "stirling": "${stirling}",
+    "jellyfin": "${jellyfin}",
+    "audiobookshelf": "${audiobookshelf}",
     "infrastructure": {
       "caddy": "${caddy}",
       "cloudflared": "${cloudflared}"
