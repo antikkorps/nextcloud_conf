@@ -261,10 +261,11 @@ crontab -e
 ## Maintenance
 
 Voir [docs/MAINTENANCE.md](docs/MAINTENANCE.md) pour :
-- Surveillance du stockage
-- Procedure d'upgrade disque
-- Nettoyage d'urgence
-- Checklist mensuelle
+- [Surveillance du stockage](docs/MAINTENANCE.md#surveillance-du-stockage)
+- [Procedure d'upgrade disque](docs/MAINTENANCE.md#procédure-dupgrade-disque)
+- [Mise a jour des images Docker](docs/MAINTENANCE.md#mise-à-jour-des-images-docker)
+- [Nettoyage d'urgence](docs/MAINTENANCE.md#nettoyage-durgence-si-disque-plein)
+- [Checklist mensuelle](docs/MAINTENANCE.md#checklist-maintenance-mensuelle)
 
 ---
 

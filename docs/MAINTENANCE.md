@@ -29,63 +29,109 @@ Ajouter dans crontab (`crontab -e`) :
 
 ## Procédure d'upgrade disque
 
-### Étape 1 : Préparer le nouveau disque
+### Prérequis
+
+- Nouveau disque connecté (interne SATA ou externe USB pour la migration)
+- Espace suffisant pour contenir toutes les données actuelles
+
+### Étape 1 : Identifier les disques
 
 ```bash
-# Identifier le nouveau disque
-lsblk
+# Lister les disques et leur état
+lsblk -o NAME,SIZE,FSTYPE,MOUNTPOINT,MODEL
 
-# Formater (attention: remplacer sdX par le bon disque!)
-sudo mkfs.ext4 /dev/sdX
-
-# Créer le point de montage temporaire
-sudo mkdir -p /mnt/nouveau_stockage
-sudo mount /dev/sdX /mnt/nouveau_stockage
+# Vérifier l'espace utilisé sur le disque actuel
+df -h /mnt/stockage
+du -sh /mnt/stockage/*
 ```
 
-### Étape 2 : Arrêter les services
+### Étape 2 : Formater le nouveau disque
+
+```bash
+# ATTENTION: vérifier que sdX est bien le nouveau disque !
+# Formater avec un label explicite
+sudo mkfs.ext4 -L stockage_cloud /dev/sdX
+
+# Créer un point de montage temporaire
+sudo mkdir -p /mnt/stockage_new
+sudo mount /dev/sdX /mnt/stockage_new
+```
+
+### Étape 3 : Arrêter les services
 
 ```bash
 cd /srv/family_cloud
 docker compose down
 ```
 
-### Étape 3 : Copier les données
+### Étape 4 : Copier les données
 
 ```bash
-# Copier avec rsync (préserve permissions et liens)
-sudo rsync -avhP --progress /mnt/stockage/ /mnt/nouveau_stockage/
+# Copier avec rsync (préserve permissions, affiche la progression)
+sudo rsync -avhP --info=progress2 /mnt/stockage/ /mnt/stockage_new/
 
-# Vérifier l'intégrité
-diff -r /mnt/stockage /mnt/nouveau_stockage
+# Vérifier que la copie est complète
+ls -la /mnt/stockage_new/
 ```
 
-### Étape 4 : Basculer vers le nouveau disque
+### Étape 5 : Configurer le montage permanent
 
 ```bash
-# Démonter l'ancien
+# Récupérer l'UUID du nouveau disque
+sudo blkid /dev/sdX
+# Exemple de sortie : UUID="3555e887-37d7-4ed6-ab60-716ddeb4c247"
+
+# Voir l'UUID actuel dans fstab
+grep stockage /etc/fstab
+
+# Remplacer l'ancien UUID par le nouveau dans /etc/fstab
+sudo sed -i 's/ANCIEN_UUID/NOUVEL_UUID/' /etc/fstab
+
+# Vérifier la modification
+grep stockage /etc/fstab
+```
+
+### Étape 6 : Basculer vers le nouveau disque
+
+```bash
+# Démonter les deux disques
+sudo umount /mnt/stockage_new
 sudo umount /mnt/stockage
 
-# Monter le nouveau à la place
-sudo umount /mnt/nouveau_stockage
-sudo mount /dev/sdX /mnt/stockage
+# Recharger systemd pour prendre en compte le nouveau fstab
+sudo systemctl daemon-reload
 
-# Mettre à jour /etc/fstab pour le montage permanent
-sudo blkid /dev/sdX  # Noter l'UUID
-sudo nano /etc/fstab
-# Ajouter/modifier la ligne :
-# UUID=xxxxx /mnt/stockage ext4 defaults 0 2
+# Monter le nouveau disque sur /mnt/stockage
+sudo mount /mnt/stockage
+
+# Vérifier que c'est le bon disque (taille attendue)
+df -h /mnt/stockage
 ```
 
-### Étape 5 : Redémarrer les services
+### Étape 7 : Redémarrer les services
 
 ```bash
 cd /srv/family_cloud
 docker compose up -d
 
-# Vérifier que tout fonctionne
-./scripts/health-check.sh
+# Vérifier le status de tous les services
+docker compose ps
+
+# Vérifier les logs si besoin
+docker compose logs --tail 20
 ```
+
+### Étape 8 : Finaliser (si disque externe)
+
+Si le nouveau disque était connecté en externe pour la migration :
+
+1. Éteindre le serveur : `sudo shutdown now`
+2. Monter le nouveau disque en interne (SATA)
+3. Retirer l'ancien disque
+4. Redémarrer - le système trouvera le disque par son UUID automatiquement
+
+> **Note** : L'avantage d'utiliser l'UUID dans fstab est que le disque sera reconnu
+> peu importe son nom de device (`/dev/sda`, `/dev/sdb`, etc.)
 
 ---
 
@@ -180,6 +226,74 @@ Si les données sont perdues mais les backups R2 sont intacts :
 ./scripts/restore.sh --seafile YYYYMMDD
 
 # Etc.
+```
+
+---
+
+## Mise à jour des images Docker
+
+### Vérifier et télécharger les mises à jour
+
+```bash
+cd /srv/family_cloud
+
+# Télécharger les nouvelles versions de toutes les images
+docker compose pull
+```
+
+Le résultat indique quelles images ont été mises à jour (téléchargement de layers) vs celles déjà à jour.
+
+### Appliquer les mises à jour
+
+```bash
+# Méthode 1 : Redémarrer tous les services avec les nouvelles images
+docker compose up -d
+
+# Méthode 2 : Redémarrer uniquement les services mis à jour
+docker compose up -d --force-recreate service1 service2
+```
+
+### Vérifier que tout fonctionne
+
+```bash
+# Status des containers
+docker compose ps
+
+# Vérifier les logs des services redémarrés
+docker compose logs --tail 20 service1 service2
+```
+
+### Nettoyer les anciennes images
+
+```bash
+# Supprimer les images obsolètes (non utilisées)
+docker image prune -f
+
+# Nettoyage plus agressif (images, containers, volumes non utilisés)
+docker system prune -a
+```
+
+### Services avec précautions particulières
+
+| Service | Précaution |
+| ------- | ---------- |
+| **immich-postgres** | Vérifier compatibilité avant upgrade majeur de PostgreSQL |
+| **seafile** | Lire les release notes avant upgrade majeur |
+| **paperless** | Peut nécessiter des migrations de DB |
+
+### Rollback en cas de problème
+
+```bash
+# Si un service ne fonctionne plus après mise à jour :
+
+# 1. Voir les images disponibles localement
+docker images | grep nom_service
+
+# 2. Modifier docker-compose.yml pour fixer une version
+# Exemple : image: immich-server:v1.94.0 au lieu de :release
+
+# 3. Redémarrer
+docker compose up -d service_concerné
 ```
 
 ---
